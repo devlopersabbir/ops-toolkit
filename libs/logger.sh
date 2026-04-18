@@ -1,50 +1,39 @@
 #!/usr/bin/env bash
 
-set -e
+# --- Load Constants ---
+REPO_BASE="${REPO_BASE:-https://raw.githubusercontent.com/devlopersabbir/ops-toolkit/main}"
 
-REPO_BASE="https://raw.githubusercontent.com/devlopersabbir/devops-tools/main"
+load_const() {
+    local file=$1
+    if [ -f "../constants/$file" ]; then source "../constants/$file";
+    elif [ -f "./constants/$file" ]; then source "./constants/$file";
+    else source <(curl -fsSL "$REPO_BASE/constants/$file"); fi
+}
 
-# ============================================
-# UI Prompt (simple, clean)
-# ============================================
+load_const "colors.sh"
 
-echo "======================================"
-echo "   🚀 DevOps Cleanup Toolkit"
-echo "======================================"
-echo ""
-echo "Select a service to remove:"
-echo "1) Nginx"
-echo "2) Caddy"
-echo "3) Docker"
-echo "0) Exit"
-echo ""
+# --- Logger Functions ---
 
-read -p "Enter choice: " choice
+log_info() {
+    echo -e "${BLUE}${INFO} $1${NC}"
+}
 
-case $choice in
-    1)
-        SERVICE="nginx/remove.sh"
-        ;;
-    2)
-        SERVICE="caddy/remove.sh"
-        ;;
-    3)
-        SERVICE="docker/remove.sh"
-        ;;
-    0)
-        echo "Bye 👋"
-        exit 0
-        ;;
-    *)
-        echo "❌ Invalid option"
-        exit 1
-        ;;
-esac
+log_success() {
+    echo -e "${GREEN}${CHECK} $1${NC}"
+}
 
-echo "⚙️ Executing $SERVICE..."
+log_warn() {
+    echo -e "${YELLOW}${WARN} $1${NC}"
+}
 
-# ============================================
-# Fetch & Execute Selected Script
-# ============================================
+log_error() {
+    echo -e "${RED}${CROSS} $1${NC}"
+}
 
-curl -fsSL "$REPO_BASE/services/$SERVICE" | bash
+log_header() {
+    echo -e "\n${CYAN}${BOLD}=== $1 ===${NC}"
+}
+
+log_step() {
+    echo -e "${CYAN}${GEAR} $1...${NC}"
+}

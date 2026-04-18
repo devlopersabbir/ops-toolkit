@@ -2,112 +2,54 @@
 
 # ============================================
 # NGINX COMPLETE REMOVAL SCRIPT
-# Author: DevOps Best Practice
-# Description:
-#   Fully removes nginx from system including:
-#   - service
-#   - packages
-#   - configs
-#   - logs
-#   - cache
 # ============================================
 
-set -e  # Exit on error
+set -e
 
-echo "🔍 Detecting OS..."
+# --- Load Infrastructure ---
+REPO_BASE="${REPO_BASE:-https://raw.githubusercontent.com/devlopersabbir/ops-toolkit/main}"
 
-# Detect OS
-if [ -f /etc/debian_version ]; then
-    OS="debian"
-elif [ -f /etc/redhat-release ]; then
-    OS="redhat"
-else
-    echo "❌ Unsupported OS"
-    exit 1
-fi
+load_component() {
+    local type=$1 # constants or libs
+    local file=$2
+    if [ -f "../../$type/$file" ]; then source "../../$type/$file";
+    elif [ -f "./$type/$file" ]; then source "./$type/$file";
+    else source <(curl -fsSL "$REPO_BASE/$type/$file"); fi
+}
 
-echo "✅ OS detected: $OS"
+load_component "constants" "colors.sh"
+load_component "libs" "logger.sh"
+load_component "libs" "utils.sh"
 
-# ============================================
-# Stop & Disable Nginx
-# ============================================
+# --- Main Logic ---
 
-echo "🛑 Stopping nginx service..."
-sudo systemctl stop nginx 2>/dev/null || true
+log_header "NGINX REMOVAL"
 
-echo "🚫 Disabling nginx service..."
-sudo systemctl disable nginx 2>/dev/null || true
+log_step "Detecting OS"
+OS=$(detect_os)
+[ "$OS" = "unknown" ] && log_error "Unsupported OS" && exit 1
+log_success "OS detected: $OS"
 
-# Remove systemd service leftovers
-echo "🧹 Cleaning systemd..."
-sudo rm -f /etc/systemd/system/nginx.service 2>/dev/null || true
-sudo systemctl daemon-reexec
-sudo systemctl daemon-reload
+log_step "Stopping service"
+manage_service "stop" "nginx"
 
-# ============================================
-# Remove Packages
-# ============================================
+log_step "Cleaning systemd"
+clean_systemd "nginx"
 
-echo "📦 Removing nginx packages..."
+log_step "Removing packages"
+remove_packages "$OS" "nginx" "nginx-common" "nginx-full" "nginx-core"
 
-if [ "$OS" = "debian" ]; then
-    sudo apt-get purge -y nginx nginx-common nginx-full nginx-core || true
-    sudo apt-get autoremove -y
-elif [ "$OS" = "redhat" ]; then
-    sudo yum remove -y nginx || true
-fi
+log_step "Cleaning directories"
+cleanup_dirs "/etc/nginx" "/var/log/nginx" "/var/cache/nginx" "/usr/share/nginx" "/var/www/html"
 
-# ============================================
-# Remove Files & Directories
-# ============================================
+log_step "Removing user/group"
+remove_user_group "nginx"
 
-echo "🧹 Removing nginx directories..."
-
-DIRS=(
-    /etc/nginx
-    /var/log/nginx
-    /var/cache/nginx
-    /usr/share/nginx
-    /var/www/html
-)
-
-for dir in "${DIRS[@]}"; do
-    if [ -d "$dir" ]; then
-        echo "Removing $dir"
-        sudo rm -rf "$dir"
-    fi
-done
-
-# ============================================
-# Remove User & Group (if exists)
-# ============================================
-
-echo "👤 Removing nginx user/group..."
-
-if id "nginx" &>/dev/null; then
-    sudo userdel -r nginx || true
-fi
-
-if getent group nginx &>/dev/null; then
-    sudo groupdel nginx || true
-fi
-
-# ============================================
-# Verify Removal
-# ============================================
-
-echo "🔎 Verifying nginx removal..."
-
+log_step "Verifying removal"
 if command -v nginx &>/dev/null; then
-    echo "⚠️ nginx binary still exists!"
+    log_warn "nginx binary still exists!"
 else
-    echo "✅ nginx binary removed"
+    log_success "nginx binary removed"
 fi
 
-if systemctl list-units --full -all | grep -q nginx; then
-    echo "⚠️ nginx service still present"
-else
-    echo "✅ nginx service removed"
-fi
-
-echo "🎉 Nginx completely removed from system!"
+log_success "Nginx completely removed from system!"
