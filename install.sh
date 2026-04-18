@@ -44,7 +44,6 @@ check_dependencies() {
 }
 
 # --- State ---
-# Initialize states as 0 (not selected)
 declare -a SELECTED_STATES
 for i in "${!SERVICES[@]}"; do
     SELECTED_STATES[$i]=0
@@ -62,7 +61,7 @@ show_menu() {
         echo -e "  $((i+1))) [$status] ${name}"
     done
     
-    echo -e "\n  f) ${GREEN}${BOLD}Finish & Proceed${NC}"
+    echo -e "\n  o) ${GREEN}${BOLD}OK / Proceed${NC}"
     echo -e "  q) Quit"
     echo -e "\n--------------------------------------"
 }
@@ -75,19 +74,18 @@ while true; do
     show_menu
     read -p "Your choice: " user_input < /dev/tty
     
-    # Trim whitespace
-    user_input=$(echo "$user_input" | xargs)
+    # Trim whitespace and convert to lowercase for comparison
+    user_input=$(echo "$user_input" | xargs | tr '[:upper:]' '[:lower:]')
     
-    # Handle empty input
+    # Handle empty input (Proceed if selections exist)
     if [[ -z "$user_input" ]]; then
-        # Check if anything selected to decide whether to proceed or warn
         SELECTED_COUNT=0
         for s in "${SELECTED_STATES[@]}"; do ((SELECTED_COUNT += s)); done
         
         if [ "$SELECTED_COUNT" -gt 0 ]; then
-            break # Exit loop and proceed
+            break 
         else
-            log_warn "Please select at least one service by entering its number."
+            log_warn "Please select at least one service."
             sleep 1
             continue
         fi
@@ -95,18 +93,18 @@ while true; do
 
     # Handle commands
     case $user_input in
-        f|F|finish|FINISH)
+        o|ok|okay|f|finish)
             SELECTED_COUNT=0
             for s in "${SELECTED_STATES[@]}"; do ((SELECTED_COUNT += s)); done
             if [ "$SELECTED_COUNT" -gt 0 ]; then break; else log_warn "Select something first!"; sleep 1; continue; fi
             ;;
-        q|Q|exit|quit)
+        q|quit|exit)
             log_info "Bye 👋"
             exit 0
             ;;
     esac
 
-    # Handle multiple selections (e.g. "1 2 3")
+    # Handle numeric selections (toggling)
     VALID_INPUT=false
     for choice in $user_input; do
         if [[ "$choice" =~ ^[0-9]+$ ]]; then
@@ -119,8 +117,11 @@ while true; do
     done
 
     if [ "$VALID_INPUT" = false ]; then
-        log_error "Invalid selection: $user_input"
-        sleep 1
+        # If it wasn't a command and wasn't a valid number
+        [[ "$user_input" =~ ^(o|ok|okay|q|quit|f|finish)$ ]] || {
+            log_error "Invalid selection: $user_input"
+            sleep 1
+        }
     fi
 done
 
@@ -137,7 +138,7 @@ for i in "${!SERVICES[@]}"; do
 done
 
 echo -e "\n${RED}${BOLD}${WARN} WARNING: This action is irreversible!${NC}"
-read -p "Are you sure you want to proceed? (y/N): " confirm < /dev/tty
+read -p "Everything look okay? (y/N): " confirm < /dev/tty
 
 if [[ ! "$confirm" =~ ^[yY]$ ]]; then
     log_info "Operation cancelled."
@@ -150,7 +151,6 @@ for target in "${FOR_EXECUTION[@]}"; do
     service_name="${target%%/*}"
     echo -e "\n${BLUE}---------- Processing ${service_name} ----------${NC}"
     
-    # Execute the remote script
     if curl -fsSL "$REPO_BASE/services/$target" | REPO_BASE="$REPO_BASE" bash; then
         log_success "${service_name} removal completed."
     else
