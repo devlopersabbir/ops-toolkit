@@ -1,6 +1,6 @@
 # 🚀 DevOps Toolkit
 
-A fast and interactive tool to safely remove services like Nginx, Caddy, and Docker from your system.
+A fast and interactive tool to safely **setup** or **remove** services like Nginx, Caddy, and Docker from your system.
 
 ## 🚀 How to Use
 
@@ -24,8 +24,8 @@ chmod +x install.sh
 ## 🎮 How it Works (Selection Menu)
 
 1.  **Toggle Selection**: Enter the number of the service (e.g., `1`, `2`) and press **Enter**.
-2.  **Multi-Select**: You can enter multiple numbers at once (e.g., `1 2`) to select several services.
-3.  **Confirm**: Type `ok` or press **Enter** on an empty line to proceed to the removal.
+2.  **Multi-Select**: You can enter multiple numbers at once (e.g., `1 2`) to select multiple setup/removal tasks.
+3.  **Confirm**: Type `ok` or press **Enter** on an empty line to proceed to the actions.
 4.  **Quit**: Type `q` or `quit` to exit at any time.
 
 ---
