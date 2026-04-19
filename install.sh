@@ -32,7 +32,7 @@ load_component "libs" "utils.sh"
 print_banner() {
     clear
     echo -e "${CYAN}${BOLD}======================================"
-    echo -e "   ${ROCKET}  DevOps Cleanup Toolkit"
+    echo -e "   ${ROCKET}  DevOps Toolkit"
     echo -e "======================================${NC}\n"
 }
 
