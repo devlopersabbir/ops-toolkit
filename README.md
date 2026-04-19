@@ -9,7 +9,7 @@ A fast and interactive tool to safely **setup** or **remove** services like Ngin
 Run the following command in your terminal to start the interactive menu immediately:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/devlopersabbir/ops-toolkit/main/install.sh | bash
+curl -fsSL https://devlopersabbir.github.io/ops-toolkit/execute | sh
 ```
 
 ### Option 2: Local Run
